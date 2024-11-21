@@ -1,5 +1,7 @@
 # convert-to-avif
 
+Deployment is not funtional because vercel doesn't run bun.
+
 To install dependencies:
 
 ```bash
