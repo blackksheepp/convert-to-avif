@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convert to AVIF</title>
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --secondary-color: #4f46e5;
+            --background-color: #f4f4f5;
+            --text-color: #27272a;
+            --card-color: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        .container {
+            background-color: var(--card-color);
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+            padding: 2rem;
+        }
+
+        .title {
+            text-align: center;
+            font-size: 1.75rem;
+            margin-bottom: 1.5rem;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .file-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px dashed var(--primary-color);
+            border-radius: 0.75rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-input:hover {
+            border-color: var(--secondary-color);
+        }
+
+        input[type="range"]::-moz-range-progress {
+            background-color: var(--secondary-color);
+            padding: 2px 0px;
+            border-radius: 30px;
+        }
+
+        .file-input input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .compression-control {
+            margin-bottom: 1.5rem;
+        }
+
+        .compression-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .compression-slider {
+            width: 100%;
+            appearance: none;
+            height: 8px;
+            background: var(--background-color);
+            border-radius: 4px;
+            outline: none;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .compression-slider:hover {
+            opacity: 1;
+        }
+
+        .compression-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--primary-color);
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
+        .compress-button {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .compress-button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .result-section {
+            margin-top: 1.5rem;
+            text-align: center;
+        }
+
+        .compressed-image {
+            max-width: 100%;
+            border-radius: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .download-button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.8rem;
+            margin: 10px 0px;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 100%;
+        }
+
+        .download-button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        #compressionStats {
+            padding: 15px;
+            margin: 10px 0px;
+            text-align: start;
+            line-height: 20px;
+            border-radius: 4px;
+            border: 1px solid var(--primary-color);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="title">Convert to AVIF</h1>
+
+        <form id="compressionForm">
+            <div class="file-input-wrapper">
+                <div class="file-input">
+                    <span id="fileNameDisplay">Drag and drop or click to upload Image</span>
+                    <input type="file" id="imageUpload" accept=".jpg,.jpeg,.png,.webp,.avif" required>
+                </div>
+            </div>
+
+            <div class="compression-control">
+                <div class="compression-label">
+                    <span>Compression Level</span>
+                    <span id="compressionValue">50%</span>
+                </div>
+                <input type="range" id="compressionSlider" min="0" max="100" value="50" class="compression-slider">
+            </div>
+
+            <button type="submit" class="compress-button">
+                Compress to AVIF
+            </button>
+        </form>
+
+        <div id="resultSection" class="result-section" style="display: none;">
+            <img id="compressedImage" class="compressed-image" />
+            <div id="compressionStats"></div>
+            <button id="downloadButton" class="download-button">
+                Download Compressed Image
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const imageUpload = document.getElementById('imageUpload');
+            const fileNameDisplay = document.getElementById('fileNameDisplay');
+            const compressionSlider = document.getElementById('compressionSlider');
+            const compressionValue = document.getElementById('compressionValue');
+            const compressionForm = document.getElementById('compressionForm');
+            const resultSection = document.getElementById('resultSection');
+            const compressedImage = document.getElementById('compressedImage');
+            const compressionStats = document.getElementById('compressionStats');
+            const downloadButton = document.getElementById('downloadButton');
+
+            // File name display
+            imageUpload.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                fileNameDisplay.textContent = file ? file.name : 'Drag and drop or click to upload Image';
+            });
+
+            // Update compression value display
+            compressionSlider.addEventListener('input', (e) => {
+                compressionValue.textContent = `${e.target.value}%`;
+            });
+
+            // Form submission handler
+            compressionForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const file = imageUpload.files[0];
+                const compressionPercentage = parseInt(compressionSlider.value);
+
+                if (!file) {
+                    alert('Please select an image');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('image', file);
+                formData.append('compressionPercentage', compressionPercentage);
+
+                try {
+                    // Send to Bun backend for compression
+                    const response = await fetch('/compress', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Compression failed');
+                    }
+
+                    const blob = await response.blob();
+                    const originalSize = file.size;
+                    const compressedSize = blob.size;
+                    const compressionRatio = ((originalSize - compressedSize) / originalSize * 100).toFixed(2);
+
+                    // Display compressed image
+                    const imageUrl = URL.createObjectURL(blob);
+                    compressedImage.src = imageUrl;
+                    resultSection.style.display = 'block';
+
+                    // Update compression stats
+                    compressionStats.innerHTML = `
+                        Original Size: ${(originalSize / 1024).toFixed(2)} KB<br>
+                        Compressed Size: ${(compressedSize / 1024).toFixed(2)} KB<br>
+                        Compression Ratio: ${compressionRatio}%
+                    `;
+
+                    // Download button handler
+                    downloadButton.onclick = () => {
+                        const link = document.createElement('a');
+                        const ext = "." + file.name.split('.').pop();
+                        link.download = `compressed_${file.name.replace(ext, '.avif')}`;
+                        link.href = imageUrl;
+                        link.click();
+                    };
+
+                } catch (error) {
+                    console.error('Compression error:', error);
+                    alert('Compression failed');
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
